@@ -80,7 +80,11 @@ cd web && python3 -m http.server 8080
 
 ### 受付 API と CORS（ブラウザ）
 
-GitHub Pages など別オリジンから `fetch` する場合、`Content-Type: application/json` だと **CORS プリフライト（OPTIONS）** が発生し、GAS 側で失敗しやすいです。フロント（`web/js/app.js`）は **`application/x-www-form-urlencoded`** で POST し、プリフライトを避けています。API（`doPost`）は JSON POST（curl 用）も同じく受け付けます。
+GAS の `ContentService` は **`Access-Control-Allow-Origin` を付けにくい**ため、GitHub Pages からの **`fetch` は CORS で失敗**しがちです（プリフライト失敗やレスポンスヘッダ不足）。
+
+そのためフロント（`web/js/app.js`）は **`fetch` を使わず JSONP**（`doGet` + `callback` クエリ + `<script src>`）で受付結果を取得します。GAS 側は `action=checkIn` の GET を処理し、`callback名(JSON)` 形式の JavaScript を返します。**`curl` やテスト用の JSON POST は従来どおり `doPost` で利用可能**です。
+
+※ 合言葉などがクエリに載るため、共有 PC やログに注意してください。スタッフメモが非常に長いと URL 上限に触れる場合があります。
 
 ### 受付 API の動作確認（curl の例）
 
