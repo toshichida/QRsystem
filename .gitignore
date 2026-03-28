@@ -1,3 +1,10 @@
 node_modules/
 .DS_Store
+
+# GAS Web アプリ URL 等（config.example.js を複製して使う）
 web/js/config.js
+
+# 環境変数・シークレット（将来追加する場合）
+.env
+.env.local
+.env.*.local
