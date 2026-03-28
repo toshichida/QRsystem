@@ -75,16 +75,16 @@ function buildMailHtml_(participantId, fullName, department) {
 function sendAllDraftsMatchingPrefix() {
   var prefix = getMailSubjectPrefix_();
   var drafts = GmailApp.getDrafts();
-  var ids = [];
+  var toSend = [];
   for (var i = 0; i < drafts.length; i++) {
     var m = drafts[i].getMessage();
     if (m.getSubject().indexOf(prefix) === 0) {
-      ids.push(drafts[i].getId());
+      toSend.push(drafts[i]);
     }
   }
   var sent = 0;
-  for (var j = 0; j < ids.length; j++) {
-    GmailApp.sendDraft(ids[j]);
+  for (var j = 0; j < toSend.length; j++) {
+    toSend[j].send();
     sent++;
     Utilities.sleep(1200);
     if (sent >= 80) {

@@ -45,9 +45,24 @@ clasp push
 
 コードを `clasp push` したあと、**変更を反映するには「新しいデプロイ」でバージョンを更新**する必要がある場合がある（「デプロイを管理」から既存デプロイのバージョンを更新）。
 
-発行された **URL** を `web/js/config.js` の `gasWebAppUrl` に記載する。初回は `web/js/config.example.js` を `web/js/config.js` に複製して編集する（`config.js` は `.gitignore` 対象）。
+発行された **URL** を `web/js/config.js` の `gasWebAppUrl` に記載する（本リポジトリでは `config.js` を追跡し GitHub Pages で配信）。
 
-**CORS**: API の `Access-Control-Allow-Origin` はスプレッドシートの **Config** シートの `cors_origin` で変更する（GitHub Pages 本番 URL が決まったらそのオリジンに合わせる）。デプロイ後の確定 URL は [API設計書](./Docs/API設計書.md) の記載と README を更新するとよい。
+**CORS**: スプレッドシートの **Config** シートで **`cors_origin`** を、GitHub Pages の**オリジン**（パスは含めない）に合わせる。例: `https://toshichida.github.io`  
+（公開 URL: **https://toshichida.github.io/QRsystem/** ）
+
+## GitHub Pages（受付フロント）
+
+- **公開 URL**: [https://toshichida.github.io/QRsystem/](https://toshichida.github.io/QRsystem/)
+- `web/` の内容は **`gh-pages` ブランチ**（リポジトリルート＝静的ファイル）から配信する運用とする。
+- 初回または `web/` を更新したあと、次で `main` の `web/` を `gh-pages` に反映して push する。
+
+```bash
+git subtree split --prefix=web -b gh-pages
+git push origin gh-pages:gh-pages --force
+git branch -D gh-pages   # ローカルの gh-pages 作業ブランチを削除（任意）
+```
+
+- リポジトリの **Settings → Pages** でソースが `gh-pages` / `/ (root)` になっていることを確認する（`gh api` で有効化済みの場合もある）。
 
 ## 受付フロント（`web/`）
 
