@@ -78,6 +78,10 @@ cd web && python3 -m http.server 8080
 
 スプレッドシートを開き、メニュー **「QR受付」** から初期化・テストデータ投入・メール下書き・一斉送信を行う。
 
+### 受付 API と CORS（ブラウザ）
+
+GitHub Pages など別オリジンから `fetch` する場合、`Content-Type: application/json` だと **CORS プリフライト（OPTIONS）** が発生し、GAS 側で失敗しやすいです。フロント（`web/js/app.js`）は **`application/x-www-form-urlencoded`** で POST し、プリフライトを避けています。API（`doPost`）は JSON POST（curl 用）も同じく受け付けます。
+
 ### 受付 API の動作確認（curl の例）
 
 ウェブアプリをデプロイしたあと、`/exec` URL に対して次のように POST できる（`PASSPHRASE` と Config の `passphrase` を一致させる）。

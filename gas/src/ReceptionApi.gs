@@ -13,19 +13,38 @@ function doOptions() {
 
 function doPost(e) {
   try {
-    if (!e || !e.postData || !e.postData.contents) {
-      return jsonError_('bad_request', 400);
-    }
-    var body;
-    try {
-      body = JSON.parse(e.postData.contents);
-    } catch (err) {
-      return jsonError_('bad_request', 400);
-    }
+    var participantId = '';
+    var staffMemo = '';
+    var passphrase = '';
 
-    var participantId = body.participantId != null ? String(body.participantId).trim() : '';
-    var staffMemo = body.staffMemo != null ? String(body.staffMemo) : '';
-    var passphrase = body.passphrase != null ? String(body.passphrase) : '';
+    // ブラウザからは application/x-www-form-urlencoded（CORS プリフライト回避）
+    if (e.parameter && e.parameter.participantId !== undefined) {
+      participantId = String(e.parameter.participantId || '').trim();
+      staffMemo = e.parameter.staffMemo != null ? String(e.parameter.staffMemo) : '';
+      passphrase = e.parameter.passphrase != null ? String(e.parameter.passphrase) : '';
+    } else if (e.postData && e.postData.contents) {
+      var ct = (e.postData.type || '').toLowerCase();
+      if (ct.indexOf('application/x-www-form-urlencoded') >= 0) {
+        var sp = new URLSearchParams(e.postData.contents);
+        participantId = String(sp.get('participantId') || '').trim();
+        staffMemo = sp.get('staffMemo') != null ? String(sp.get('staffMemo')) : '';
+        passphrase = sp.get('passphrase') != null ? String(sp.get('passphrase')) : '';
+      } else if (ct.indexOf('application/json') >= 0 || ct.indexOf('text/plain') >= 0) {
+        var body;
+        try {
+          body = JSON.parse(e.postData.contents);
+        } catch (err) {
+          return jsonError_('bad_request', 400);
+        }
+        participantId = body.participantId != null ? String(body.participantId).trim() : '';
+        staffMemo = body.staffMemo != null ? String(body.staffMemo) : '';
+        passphrase = body.passphrase != null ? String(body.passphrase) : '';
+      } else {
+        return jsonError_('bad_request', 400);
+      }
+    } else {
+      return jsonError_('bad_request', 400);
+    }
 
     if (!participantId) {
       return jsonError_('bad_request', 400);

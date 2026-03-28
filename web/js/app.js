@@ -97,17 +97,21 @@
     setStatus('loading', '送信中…');
     els.participant.classList.add('hidden');
 
-    var payload = {
-      action: 'checkIn',
-      participantId: participantId,
-      staffMemo: els.staffMemo.value.trim(),
-      passphrase: passphrase
-    };
+    // application/json だと CORS プリフライト（OPTIONS）が必須になり、
+    // GAS ウェブアプリ側で失敗しやすい → form-urlencoded は「単純リクエスト」でプリフライトなし
+    var params = new URLSearchParams();
+    params.set('action', 'checkIn');
+    params.set('participantId', participantId);
+    params.set('staffMemo', els.staffMemo.value.trim());
+    params.set('passphrase', passphrase);
 
     fetch(cfg.gasWebAppUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+      credentials: 'omit',
+      mode: 'cors',
+      cache: 'no-store'
     })
       .then(function (res) {
         return res.text().then(function (text) {
