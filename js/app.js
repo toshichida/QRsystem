@@ -15,6 +15,7 @@
   var lastScan = '';
   var cooldownUntil = 0;
   var COOLDOWN_MS = 3500;
+  var JSONP_TIMEOUT_MS = 45000;
 
   function getConfig() {
     var c = window.QR_RECEPTION_CONFIG || {};
@@ -79,7 +80,22 @@
     return 'エラー: ' + err;
   }
 
-  function postCheckIn(participantId) {
+  function handleCheckInResult(data) {
+    if (data && data.ok === true) {
+      setStatus('ok', '受付を記録しました');
+      showParticipant(data.participant || {});
+      return;
+    }
+    var code = data && data.error ? data.error : 'unknown';
+    setStatus('err', mapError(code));
+    showParticipant({});
+  }
+
+  /**
+   * fetch は GAS が Access-Control-Allow-Origin を返さないため CORS で失敗する。
+   * JSONP（GET + script）ならブラウザの CORS 制限を受けず、応答 JSON を受け取れる。
+   */
+  function requestCheckIn(participantId) {
     var cfg = getConfig();
     if (!cfg.gasWebAppUrl) {
       setStatus('err', 'web/js/config.js に gasWebAppUrl を設定してください。');
@@ -97,48 +113,62 @@
     setStatus('loading', '送信中…');
     els.participant.classList.add('hidden');
 
-    // application/json だと CORS プリフライト（OPTIONS）が必須になり、
-    // GAS ウェブアプリ側で失敗しやすい → form-urlencoded は「単純リクエスト」でプリフライトなし
-    var params = new URLSearchParams();
-    params.set('action', 'checkIn');
-    params.set('participantId', participantId);
-    params.set('staffMemo', els.staffMemo.value.trim());
-    params.set('passphrase', passphrase);
+    var cbName = 'qrJsonpCb_' + Date.now() + '_' + Math.floor(Math.random() * 1e9);
+    var script = document.createElement('script');
+    var timer = null;
 
-    fetch(cfg.gasWebAppUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString(),
-      credentials: 'omit',
-      mode: 'cors',
-      cache: 'no-store'
-    })
-      .then(function (res) {
-        return res.text().then(function (text) {
-          var data = null;
-          try {
-            data = JSON.parse(text);
-          } catch (e) {
-            throw new Error('JSON でない応答を受け取りました');
-          }
-          return { httpOk: res.ok, data: data };
-        });
-      })
-      .then(function (result) {
-        var data = result.data;
-        if (data && data.ok === true) {
-          setStatus('ok', '受付を記録しました');
-          showParticipant(data.participant || {});
-          return;
-        }
-        var code = data && data.error ? data.error : 'unknown';
-        setStatus('err', mapError(code));
+    function cleanup() {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      try {
+        delete window[cbName];
+      } catch (e) {
+        window[cbName] = undefined;
+      }
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    }
+
+    window[cbName] = function (data) {
+      cleanup();
+      try {
+        handleCheckInResult(data);
+      } catch (e) {
+        setStatus('err', '応答の処理に失敗しました');
         showParticipant({});
-      })
-      .catch(function (err) {
-        setStatus('err', '通信に失敗しました: ' + (err.message || String(err)));
-        showParticipant({});
-      });
+      }
+    };
+
+    try {
+      var u = new URL(cfg.gasWebAppUrl);
+      u.searchParams.set('action', 'checkIn');
+      u.searchParams.set('participantId', participantId);
+      u.searchParams.set('staffMemo', els.staffMemo.value.trim());
+      u.searchParams.set('passphrase', passphrase);
+      u.searchParams.set('callback', cbName);
+      script.src = u.toString();
+    } catch (e) {
+      cleanup();
+      setStatus('err', 'URL が不正です（config.js の gasWebAppUrl を確認）');
+      return;
+    }
+
+    script.onerror = function () {
+      cleanup();
+      setStatus('err', '通信に失敗しました（スクリプト読み込み）。GAS の再デプロイと URL を確認してください。');
+      showParticipant({});
+    };
+
+    timer = setTimeout(function () {
+      cleanup();
+      setStatus('err', '通信がタイムアウトしました');
+      showParticipant({});
+    }, JSONP_TIMEOUT_MS);
+
+    document.head.appendChild(script);
   }
 
   function onScanSuccess(decodedText) {
@@ -149,7 +179,7 @@
     if (text === lastScan) return;
     lastScan = text;
     cooldownUntil = now + COOLDOWN_MS;
-    postCheckIn(text);
+    requestCheckIn(text);
   }
 
   function startCamera() {
