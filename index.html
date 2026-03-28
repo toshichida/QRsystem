@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QR 受付</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+    <script src="js/config.js" defer></script>
+    <script src="js/app.js" defer></script>
+  </head>
+  <body>
+    <header class="header">
+      <h1 class="title">QR 受付</h1>
+      <p class="subtitle">カメラで QR を読み取り、参加者を記録します</p>
+    </header>
+
+    <main class="main">
+      <section class="card" aria-labelledby="auth-heading">
+        <h2 id="auth-heading" class="card-title">簡易認証</h2>
+        <label class="field">
+          <span class="field-label">合言葉</span>
+          <input type="password" id="passphrase" class="input" autocomplete="off" placeholder="当日の合言葉" />
+        </label>
+        <label class="check">
+          <input type="checkbox" id="rememberPassphrase" />
+          <span>この端末に合言葉を保存（localStorage）</span>
+        </label>
+      </section>
+
+      <section class="card" aria-labelledby="memo-heading">
+        <h2 id="memo-heading" class="card-title">スタッフメモ（任意）</h2>
+        <label class="field">
+          <span class="field-label">メモ</span>
+          <textarea id="staffMemo" class="input textarea" rows="2" placeholder="備考があれば入力"></textarea>
+        </label>
+      </section>
+
+      <section class="card" aria-labelledby="cam-heading">
+        <h2 id="cam-heading" class="card-title">カメラ</h2>
+        <div id="reader" class="reader"></div>
+        <p class="hint">QR を枠内に合わせてください。読取後、自動で受付を送信します。</p>
+      </section>
+
+      <section class="card card--result" aria-live="polite" aria-atomic="true">
+        <h2 class="card-title">結果</h2>
+        <div id="status" class="status status--idle">待機中</div>
+        <div id="participant" class="participant hidden"></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>受付 API URL は <code>web/js/config.js</code> で設定してください（<code>config.example.js</code> を複製）。</p>
+    </footer>
+  </body>
+</html>
